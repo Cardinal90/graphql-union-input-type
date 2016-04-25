@@ -66,7 +66,7 @@ var SithInputType = new GraphQLInputObjectType({
 var HeroInputType = UnionInputType({
 	name: 'hero',
 	inputTypes: [JediInputType, SithInputType], //an object can be used instead to query by names other than defined in these types
-	typeKey: 'kind'
+	typeKey: 'side'
 });
 ```
 OR
@@ -80,7 +80,7 @@ var HeroInputType = UnionInputType({
 			return SithInputType;
 		}
 	},
-	typeKey: 'kind'
+	typeKey: 'side'
 });
 ```
 ####Create schema
@@ -145,4 +145,5 @@ Test are written for `jasmine`. I use `nodemon` to run them. You can find more e
 Feel free to make suggestions or pull requests.
 ###License
 (The MIT License)
+
 Copyright (c) 2016 Sergei Petrov
