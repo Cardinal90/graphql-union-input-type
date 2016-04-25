@@ -23,7 +23,7 @@ UnionInputType(options);
    - or object with `name:GraphQLInputObjectType` pairs. This `name` will be used instead.
 
    Objects returned by `UnionInputType` may also be used. This argument will be ignored if `resolveType` function is provided.
- - `typeKey`: a key in a mutation argument object containing the `name` of a type to validate against. If omitted, another [strategy](/#now-you-can-call-mutations-on-it) will be used instead.
+ - `typeKey`: a key in a mutation argument object containing the `name` of a type to validate against. If omitted, another [strategy](#now-you-can-call-mutations-on-it) will be used instead.
  - `resolveType`(`function(name)` -> `GraphQLInputObjectType`): takes a name found in mutation argument and returns corresponding
 `GraphQLInputObjectType` or an object returned by `UnionInputType`. This strategy is not restricted by a predefined set of InputTypes. It behaves as an interface in that `UnionInputType` does not know what InputTypes implement it. If omitted, `inputTypes` is used.
 
