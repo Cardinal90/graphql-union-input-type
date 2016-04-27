@@ -29,7 +29,7 @@ function helper(name, type) {
  * UnionInputType - Union Input Type for GraphQL
  *
  * @param  {object} options see below
- * @return {object}         returns validated and parsed value
+ * @return {any} 	returns validated and parsed value
  */
 module.exports = function UnionInputType(options) {
 	"use strict";
@@ -54,11 +54,17 @@ module.exports = function UnionInputType(options) {
 
 
 	/**
-	 * 	 @param  {function} options.resolveType			Optional. If provided, is called with a key name and must return corresponding GraphQLInputObjectType
+	 * 	 @param  {function} options.resolveType			Optional. If provided, is called with a key name and must return corresponding GraphQLInputObjectType or null
 	 */
 	var resolveType = options.resolveType;
 
-	if (!resolveType) {
+	/**
+	 * 	 @param  {function} options.resolveType			Optional. If provided, is called with full AST for the input argument and must return
+	 * 	                                          		corresponding GraphQLInputObjectType or null
+	 */
+	var resolveTypeFromAst = options.resolveTypeFromAst;
+
+	if (!resolveType && !resolveTypeFromAst) {
 		if (Array.isArray(referenceTypes)) {
 			referenceTypes = referenceTypes.reduce(function(acc, refType) {
 				if (!(refType instanceof GraphQLInputObjectType || refType instanceof GraphQLScalarType)) {
@@ -87,38 +93,42 @@ module.exports = function UnionInputType(options) {
 		},
 		parseLiteral: function(ast) {
 			var type, inputType;
-			if (typeKey) {
-				try {
-					for (var i = 0; i < ast.fields.length; i++) {
-						if (ast.fields[i].name.value === typeKey) {
-							type = ast.fields[i].value.value;
-							break;
+			if (typeof resolveTypeFromAst === 'function') {
+				inputType = resolveTypeFromAst(ast);
+			} else {
+				if (typeKey) {
+					try {
+						for (var i = 0; i < ast.fields.length; i++) {
+							if (ast.fields[i].name.value === typeKey) {
+								type = ast.fields[i].value.value;
+								break;
+							}
 						}
+						if (!type) {
+							throw (new Error);
+						}
+					} catch (err) {
+						throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property');
 					}
-					if (!type) {
-						throw (new Error);
+				} else {
+					try {
+						if (ast.fields[0].name.value === '_type_' && ast.fields[1].name.value === '_value_') {
+							type = ast.fields[0].value.value;
+						} else {
+							throw (new Error);
+						}
+					} catch (err) {
+						throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order');
 					}
-				} catch (err) {
-					throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property');
 				}
-			} else {
-				try {
-					if (ast.fields[0].name.value === '_type_' && ast.fields[1].name.value === '_value_') {
-						type = ast.fields[0].value.value;
-					} else {
-						throw (new Error);
+				if (typeof resolveType === 'function') {
+					inputType = resolveType(type);
+					if (!typeKey) {
+						inputType = helper(type, inputType);
 					}
-				} catch (err) {
-					throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order');
+				} else {
+					inputType = referenceTypes[type];
 				}
-			}
-			if (typeof resolveType === 'function') {
-				inputType = resolveType(type);
-				if (!typeKey) {
-					inputType = helper(type, inputType);
-				}
-			} else {
-				inputType = referenceTypes[type];
 			}
 			if (isValidLiteralValue(inputType, ast).length == 0) {
 				return valueFromAST(ast, inputType);

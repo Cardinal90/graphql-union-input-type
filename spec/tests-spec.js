@@ -297,7 +297,7 @@ describe('Query format with provided typeKey:', function() {
 
 	});
 
-	describe('Function to resolve types at runtime:', function() {
+	describe('Function to resolve types from names at runtime:', function() {
 
 		function resolveType(type) {
 			if (type === 'jedi') {
@@ -340,6 +340,39 @@ describe('Query format with provided typeKey:', function() {
 					expect(res.errors).toBeDefined();
 					done();
 				});
+			});
+		});
+	});
+});
+
+
+describe('Function to resolve types from AST:', function() {
+
+	function resolveTypeFromAst(ast) {
+		if (ast.fields[2] && ast.fields[2].name.value === 'doubleBlade') {
+			return SithInputType;
+		} else {
+			return JediInputType;
+		}
+	}
+	var schema = generateSchema({
+		name: 'heroUnion',
+		resolveTypeFromAst: resolveTypeFromAst
+	});
+
+	describe('Correctly validates against the type returned from function:', function() {
+
+		it('Validates Maul as a sith', function(done) {
+			var query = `
+			mutation {
+				hero(input: {name: "Maul", saberColor: "red", doubleBlade: true})
+			}
+			`;
+
+			graphql(schema, query).then(function(res) {
+				// console.log(res);
+				expect(res.data).toBeDefined();
+				done();
 			});
 		});
 	});
