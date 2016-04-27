@@ -29,6 +29,7 @@ UnionInputType(options);
  - `resolveType`(`function(name)` -> `GraphQLInputObjectType|null`): takes a name found in mutation argument and returns corresponding
 `GraphQLInputObjectType` or an object returned by `UnionInputType`. This strategy is not restricted by a predefined set of input types. It behaves as an interface in that `UnionInputType` does not know what input types implement it. If omitted, `inputTypes` is used.
  - `resolveTypeFromAst`(`function(ast)` -> `GraphQLInputObjectType|null`): provide this, if you absolutely do not want to explicitly specify the type in you mutation. The function will be called with full AST, which you can traverse manually to identify the input type and return it.
+
 ###Examples
 ####Create normal input types
 ```js
