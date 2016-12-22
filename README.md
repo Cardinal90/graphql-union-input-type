@@ -166,10 +166,13 @@ var query = `mutation {
 You can use these unions as mutation arguments, nest them inside any input types and even create unions of unions. The only small problem is that objects returned by `UnionInputType` are really `GraphQLScalarType`, so I had to allow scalars to be passed to the function.
 
 Update: [this issue](https://github.com/Cardinal90/graphql-union-input-type/issues/2) highlighted a serious limitation - it is not possible to provide type as a variable.
+
 ###Tests
 Test are written for `jasmine`. I use `nodemon` to run them. You can find more examples in the spec file. The last test is not written formally, I just used it to play around with nested structures.
+
 ###Contributing
 Feel free to make suggestions or pull requests.
+
 ###License
 (The MIT License)
 
