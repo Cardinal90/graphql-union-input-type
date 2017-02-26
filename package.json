@@ -9,7 +9,7 @@
     "author": "Sergei Petrov",
     "license": "MIT",
     "peerDependencies": {
-        "graphql": "^0.7.0 || ^0.8.0"
+        "graphql": "^0.7.0 || ^0.8.0 || ^0.9.0"
     },
     "keywords": ["graphql", "union", "interface", "input", "type"],
     "repository": {
