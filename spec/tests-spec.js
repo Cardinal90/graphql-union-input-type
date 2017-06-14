@@ -14,7 +14,7 @@ var UnionInputType = require('../index.js');
 
 var JediInputType = new GraphQLInputObjectType({
 	name: 'jedi',
-	fields: function() {
+	fields: function () {
 		return {
 			side: {
 				type: GraphQLString
@@ -31,7 +31,7 @@ var JediInputType = new GraphQLInputObjectType({
 
 var SithInputType = new GraphQLInputObjectType({
 	name: 'sith',
-	fields: function() {
+	fields: function () {
 		return {
 			side: {
 				type: GraphQLString
@@ -55,7 +55,7 @@ function generateSchema(options) {
 
 	var MutationType = new GraphQLObjectType({
 		name: 'mutation',
-		fields: function() {
+		fields: function () {
 			return {
 				hero: {
 					type: GraphQLBoolean,
@@ -64,7 +64,7 @@ function generateSchema(options) {
 							type: HeroInputType
 						}
 					},
-					resolve: function(root, args) {
+					resolve: function (root, args) {
 						return true;
 					}
 				}
@@ -88,36 +88,52 @@ function generateSchema(options) {
 }
 
 
-describe('_type_/_value_ query format:', function() {
+describe('_type_/_value_ query format:', function () {
 
 	var schema = generateSchema({
 		name: 'heroUnion',
 		inputTypes: [JediInputType, SithInputType]
 	});
 
-	describe('Throws on incorrect query format', function() {
-		it('Expects both _type_ and _value_ parameters', function(done) {
+	describe('Throws on incorrect query format', function () {
+		it('Expects both _type_ and _value_ parameters', function (done) {
 			var query = `
 			mutation {
 				hero(input: {_value_: {name: "Maul", saberColor: "red", doubleBlade: true}})
 			}
 			`;
 
-			graphql(schema, query).then(function(res) {
+			graphql(schema, query).then(function (res) {
 				// console.log(res);
 				expect(res.errors).toBeDefined();
 				done();
 			});
 		});
 
-		it('Expects parameters in correct order', function(done) {
+		it('Does the same with a variable', function (done) {
+			var query = `
+				mutation($hero: heroUnion!) {
+					hero(input: $hero)
+				}
+				`;
+
+			graphql(schema, query, {}, {}, {
+				hero: { _type_: "sith", _value_: { name: "Maul", saberColor: "red", doubleBlade: true } }
+			}).then(function (res) {
+				// console.log(res);
+				expect(res.data).toBeDefined();
+				done();
+			});
+		});
+
+		it('Expects parameters in correct order', function (done) {
 			var query = `
 			mutation {
 				hero(input: {_value_: {name: "Maul", saberColor: "red", doubleBlade: true}, _type_: "sith"})
 			}
 			`;
 
-			graphql(schema, query).then(function(res) {
+			graphql(schema, query).then(function (res) {
 				// console.log(res);
 				expect(res.errors).toBeDefined();
 				done();
@@ -125,36 +141,36 @@ describe('_type_/_value_ query format:', function() {
 		});
 	})
 
-	describe('Predefined input types:', function() {
+	describe('Predefined input types:', function () {
 		var schema = generateSchema({
 			name: 'heroUnion',
 			inputTypes: [JediInputType, SithInputType]
 		});
 
-		describe('Correctly validates against the type requested in the mutation:', function() {
+		describe('Correctly validates against the type requested in the mutation:', function () {
 
-			it('Validates Maul as a sith', function(done) {
+			it('Validates Maul as a sith', function (done) {
 				var query = `
 				mutation {
 					hero(input: {_type_: "sith", _value_: {name: "Maul", saberColor: "red", doubleBlade: true}})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
 					// console.log(res);
 					expect(res.data).toBeDefined();
 					done();
 				});
 			});
 
-			it('Throws, when trying to assign that doubleBlade to a jedi', function(done) {
+			it('Throws, when trying to assign that doubleBlade to a jedi', function (done) {
 				var query = `
 				mutation {
 					hero(input: {_type_: "jedi", _value_: {name: "Maul", saberColor: "red", doubleBlade: true}})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
 					// console.log(res);
 					expect(res.errors).toBeDefined();
 					done();
@@ -165,7 +181,7 @@ describe('_type_/_value_ query format:', function() {
 
 	});
 
-	describe('Function to resolve types at runtime:', function() {
+	describe('Function to resolve types at runtime:', function () {
 
 		function resolveType(type) {
 			if (type === 'jedi') {
@@ -179,30 +195,30 @@ describe('_type_/_value_ query format:', function() {
 			resolveType: resolveType
 		});
 
-		describe('Correctly validates against the type requested in the mutation:', function() {
+		describe('Correctly validates against the type requested in the mutation:', function () {
 
-			it('Validates Maul as a sith', function(done) {
+			it('Validates Maul as a sith', function (done) {
 				var query = `
 				mutation {
 					hero(input: {_type_: "sith", _value_: {name: "Maul", saberColor: "red", doubleBlade: true}})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
 					// console.log(res);
 					expect(res.data).toBeDefined();
 					done();
 				});
 			});
 
-			it('Throws, when trying to assign that doubleBlade to a jedi', function(done) {
+			it('Throws, when trying to assign that doubleBlade to a jedi', function (done) {
 				var query = `
 				mutation {
 					hero(input: {_type_: "jedi", _value_: {name: "Maul", saberColor: "red", doubleBlade: true}})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
 					// console.log(res);
 					expect(res.errors).toBeDefined();
 					done();
@@ -213,7 +229,7 @@ describe('_type_/_value_ query format:', function() {
 });
 
 
-describe('Query format with provided typeKey:', function() {
+describe('Query format with provided typeKey:', function () {
 
 
 	var schema = generateSchema({
@@ -222,29 +238,29 @@ describe('Query format with provided typeKey:', function() {
 		typeKey: 'side'
 	});
 
-	describe('Throws on incorrect query format', function() {
-		it('Expects to find the provided typeKey in object', function(done) {
+	describe('Throws on incorrect query format', function () {
+		it('Expects to find the provided typeKey in object', function (done) {
 			var query = `
 			mutation {
 				hero(input: {name: "Maul", saberColor: "red", doubleBlade: true})
 			}
 			`;
 
-			graphql(schema, query).then(function(res) {
+			graphql(schema, query).then(function (res) {
 				// console.log(res);
 				expect(res.errors).toBeDefined();
 				done();
 			});
 		});
 
-		it('Does not accept previous format', function(done) {
+		it('Does not accept previous format', function (done) {
 			var query = `
 			mutation {
 				hero(input: {_type_: "jedi", _value_: {name: "Maul", saberColor: "red", doubleBlade: true}})
 			}
 			`;
 
-			graphql(schema, query).then(function(res) {
+			graphql(schema, query).then(function (res) {
 				// console.log(res);
 				expect(res.errors).toBeDefined();
 				done();
@@ -252,7 +268,7 @@ describe('Query format with provided typeKey:', function() {
 		});
 	});
 
-	describe('Predefined input types (with object format for inputTypes this time)', function() {
+	describe('Predefined input types (with object format for inputTypes this time)', function () {
 
 		var schema = generateSchema({
 			name: 'heroUnion',
@@ -263,30 +279,46 @@ describe('Query format with provided typeKey:', function() {
 			typeKey: 'side'
 		});
 
-		describe('Correctly validates against the type requested in the mutation:', function() {
+		describe('Correctly validates against the type requested in the mutation:', function () {
 
-			it('Validates Maul as a sith', function(done) {
+			it('Validates Maul as a sith', function (done) {
 				var query = `
 				mutation {
 					hero(input: {name: "Maul", saberColor: "red", doubleBlade: true, side: "SITH"})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
 					// console.log(res);
 					expect(res.data).toBeDefined();
 					done();
 				});
 			});
 
-			it('Throws, when trying to assign that doubleBlade to a jedi', function(done) {
+			it('Does the same with a variable', function (done) {
+				var query = `
+				mutation($hero: heroUnion!) {
+					hero(input: $hero)
+				}
+				`;
+
+				graphql(schema, query, {}, {}, {
+					hero: { name: "Maul", saberColor: "red", doubleBlade: true, side: "SITH" }
+				}).then(function (res) {
+					// console.log(res);
+					expect(res.data).toBeDefined();
+					done();
+				});
+			});
+
+			it('Throws, when trying to assign that doubleBlade to a jedi', function (done) {
 				var query = `
 				mutation {
 					hero(input: {name: "Maul", saberColor: "red", doubleBlade: true, side: "JEDI"})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
 					// console.log(res);
 					expect(res.errors).toBeDefined();
 					done();
@@ -297,7 +329,7 @@ describe('Query format with provided typeKey:', function() {
 
 	});
 
-	describe('Function to resolve types from names at runtime:', function() {
+	describe('Function to resolve types from names at runtime:', function () {
 
 		function resolveType(type) {
 			if (type === 'jedi') {
@@ -312,30 +344,46 @@ describe('Query format with provided typeKey:', function() {
 			typeKey: 'side'
 		});
 
-		describe('Correctly validates against the type requested in the mutation:', function() {
+		describe('Correctly validates against the type requested in the mutation:', function () {
 
-			it('Validates Maul as a sith', function(done) {
+			it('Validates Maul as a sith', function (done) {
 				var query = `
 				mutation {
 					hero(input: {side: "sith", name: "Maul", saberColor: "red", doubleBlade: true})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
 					// console.log(res);
 					expect(res.data).toBeDefined();
 					done();
 				});
 			});
 
-			it('Throws, when trying to assign that doubleBlade to a jedi', function(done) {
+			it('Throws, when trying to assign that doubleBlade to a jedi', function (done) {
 				var query = `
 				mutation {
-					hero(input: 5)
+					hero(input: {side: "jedi", name: "Maul", saberColor: "red", doubleBlade: true})
 				}
 				`;
 
-				graphql(schema, query).then(function(res) {
+				graphql(schema, query).then(function (res) {
+					// console.log(res);
+					expect(res.errors).toBeDefined();
+					done();
+				});
+			});
+
+			it('Does the same with a variable', function (done) {
+				var query = `
+				mutation($hero: heroUnion!) {
+					hero(input: $hero)
+				}
+				`;
+
+				graphql(schema, query, {}, {}, {
+					hero: { side: "jedi", name: "Maul", saberColor: "red", doubleBlade: true }
+				}).then(function (res) {
 					// console.log(res);
 					expect(res.errors).toBeDefined();
 					done();
@@ -346,7 +394,7 @@ describe('Query format with provided typeKey:', function() {
 });
 
 
-describe('Function to resolve types from AST:', function() {
+describe('Function to resolve types from AST:', function () {
 
 	function resolveTypeFromAst(ast) {
 		if (ast.fields[2] && ast.fields[2].name.value === 'doubleBlade') {
@@ -360,16 +408,16 @@ describe('Function to resolve types from AST:', function() {
 		resolveTypeFromAst: resolveTypeFromAst
 	});
 
-	describe('Correctly validates against the type returned from function:', function() {
+	describe('Correctly validates against the type returned from function:', function () {
 
-		it('Validates Maul as a sith', function(done) {
+		it('Validates Maul as a sith', function (done) {
 			var query = `
 			mutation {
 				hero(input: {name: "Maul", saberColor: "red", doubleBlade: true})
 			}
 			`;
 
-			graphql(schema, query).then(function(res) {
+			graphql(schema, query).then(function (res) {
 				// console.log(res);
 				expect(res.data).toBeDefined();
 				done();
@@ -379,14 +427,48 @@ describe('Function to resolve types from AST:', function() {
 });
 
 
+describe('Function to resolve types from value (for variables):', function () {
 
-describe('A more complex test to play around with to show that nested arguments and unions of unions also work', function() {
+	function resolveTypeFromValue(value) {
+		if (value.type === 'jedi') {
+			return JediInputType;
+		} else {
+			return SithInputType;
+		}
+	}
+	var schema = generateSchema({
+		name: 'heroUnion',
+		resolveTypeFromValue: resolveTypeFromValue
+	});
 
-	it('', function(done) {
+	describe('Correctly validates against the type returned from function:', function () {
+
+		it('Does not validate a jedi with a doubleblade', function (done) {
+			var query = `
+				mutation($hero: heroUnion!) {
+					hero(input: $hero)
+				}
+				`;
+
+			graphql(schema, query, {}, {}, {
+				hero: { type: 'jedi', name: "Maul", saberColor: "red", doubleBlade: true }
+			}).then(function (res) {
+				// console.log(res);
+				expect(res.errors).toBeDefined();
+				done();
+			});
+		});
+	});
+});
+
+
+describe('A more complex test to play around with to show that nested arguments and unions of unions also work', function () {
+
+	it('', function (done) {
 
 		JediInputType = new GraphQLInputObjectType({
 			name: 'jedi',
-			fields: function() {
+			fields: function () {
 				return {
 					side: {
 						type: GraphQLString
@@ -409,7 +491,7 @@ describe('A more complex test to play around with to show that nested arguments 
 
 		SithInputType = new GraphQLInputObjectType({
 			name: 'sith',
-			fields: function() {
+			fields: function () {
 				return {
 					side: {
 						type: GraphQLString
@@ -491,17 +573,17 @@ describe('A more complex test to play around with to show that nested arguments 
 		}
 		`;
 
-		graphql(schema, query).then(function(res) {
-				// console.log(res);
-				expect(res.data).toBeDefined();
-			})
-			.then(function() {
-				graphql(schema, query2).then(function(res) {
-						// console.log(res);
-						expect(res.errors).toBeDefined();
-					})
-					.then(function() {
-						graphql(schema, query3).then(function(res) {
+		graphql(schema, query).then(function (res) {
+			// console.log(res);
+			expect(res.data).toBeDefined();
+		})
+			.then(function () {
+				graphql(schema, query2).then(function (res) {
+					// console.log(res);
+					expect(res.errors).toBeDefined();
+				})
+					.then(function () {
+						graphql(schema, query3).then(function (res) {
 							// console.log(res);
 							expect(res.errors).toBeDefined();
 							done();

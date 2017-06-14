@@ -3,6 +3,7 @@ var GraphQLInputObjectType = require('graphql').GraphQLInputObjectType;
 var GraphQLString = require('graphql').GraphQLString;
 
 var isValidLiteralValue = require('graphql/utilities').isValidLiteralValue;
+var isValidJSValue = require('graphql/utilities').isValidJSValue;
 var valueFromAST = require('graphql/utilities').valueFromAST;
 
 var GraphQLError = require('graphql/error').GraphQLError;
@@ -11,7 +12,7 @@ function helper(name, type) {
 	"use strict";
 	return (new GraphQLInputObjectType({
 		name: name,
-		fields: function() {
+		fields: function () {
 			return {
 				_type_: {
 					type: GraphQLString
@@ -34,39 +35,44 @@ function helper(name, type) {
 module.exports = function UnionInputType(options) {
 	"use strict";
 
-	/**
-	 * 	@param  {array} options.name					Name for the union type. Must be unique in your schema. Has to be used in queries to nested unions.
-	 */
+    /**
+     * 	@param  {array} options.name					Name for the union type. Must be unique in your schema. Has to be used in queries to nested unions.
+     */
 	var name = options.name;
 
-	/**
-	 * 	@param  {array|object} options.inputTypes 		Optional. Either array of GraphQLInputObjectType objects or UnionInputTypes (which are Scalars really)
-	 * 	                                              	or object with {name:GraphQLInputObjectType} pairs.
-	 * 	                                             	Will be ignored if resolveType is provided.
-	 */
+    /**
+     * 	@param  {array|object} options.inputTypes 		Optional. Either array of GraphQLInputObjectType objects or UnionInputTypes (which are Scalars really)
+     * 	                                              	or object with {name:GraphQLInputObjectType} pairs.
+     * 	                                             	Will be ignored if resolveType is provided.
+     */
 	var referenceTypes = options.inputTypes;
 
-	/**
-	 * 	 @param  {string} options.typeKey				Optional. If provided, is used as a key containing the type name. If not, the query argument must
-	 * 	                                      			contain _type_ and _value_ parameteres in this particular order
-	 */
+    /**
+     * 	 @param  {string} options.typeKey				Optional. If provided, is used as a key containing the type name. If not, the query argument must
+     * 	                                      			contain _type_ and _value_ parameteres in this particular order
+     */
 	var typeKey = options.typeKey;
 
-
-	/**
-	 * 	 @param  {function} options.resolveType			Optional. If provided, is called with a key name and must return corresponding GraphQLInputObjectType or null
-	 */
+    /**
+     * 	 @param  {function} options.resolveType			Optional. If provided, is called with a key name and must return corresponding GraphQLInputObjectType or null
+     */
 	var resolveType = options.resolveType;
 
-	/**
-	 * 	 @param  {function} options.resolveType			Optional. If provided, is called with full AST for the input argument and must return
-	 * 	                                          		corresponding GraphQLInputObjectType or null
-	 */
+    /**
+     * 	 @param  {function} options.resolveTypeFromAst			Optional. If provided, is called with full AST for the input argument and must return
+     * 	                                          		corresponding GraphQLInputObjectType or null
+     */
 	var resolveTypeFromAst = options.resolveTypeFromAst;
+
+    /**
+     * 	 @param  {function} options.resolveTypeFromValue		Optional. If provided, is called with a variable value and must return
+     * 	                                          		corresponding GraphQLInputObjectType or null
+     */
+	var resolveTypeFromValue = options.resolveTypeFromValue;
 
 	if (!resolveType && !resolveTypeFromAst) {
 		if (Array.isArray(referenceTypes)) {
-			referenceTypes = referenceTypes.reduce(function(acc, refType) {
+			referenceTypes = referenceTypes.reduce(function (acc, refType) {
 				if (!(refType instanceof GraphQLInputObjectType || refType instanceof GraphQLScalarType)) {
 					throw (new GraphQLError(name + '(UnionInputType): all inputTypes must be of GraphQLInputObjectType or GraphQLScalarType(created by UnionInputType function)'));
 				}
@@ -74,7 +80,7 @@ module.exports = function UnionInputType(options) {
 				return acc;
 			}, {});
 		} else if (referenceTypes !== null && typeof referenceTypes === 'object') {
-			Object.keys(referenceTypes).forEach(function(key) {
+			Object.keys(referenceTypes).forEach(function (key) {
 				if (!(referenceTypes[key] instanceof GraphQLInputObjectType || referenceTypes[key] instanceof GraphQLScalarType)) {
 					throw (new GraphQLError(name + '(UnionInputType): all inputTypes must be of GraphQLInputObjectType or GraphQLScalarType(created by UnionInputType function'));
 				}
@@ -85,13 +91,42 @@ module.exports = function UnionInputType(options) {
 
 	var union = (new GraphQLScalarType({
 		name: name,
-		serialize: function(value) {
+		serialize: function (value) {
 			return value;
 		},
-		parseValue: function(value) {
-			return value;
+		parseValue: function (value) {
+			var type, inputType, ast;
+			if (typeof resolveTypeFromValue === 'function') {
+				inputType = resolveTypeFromValue(value);
+			} else {
+				if (typeKey) {
+					if (value[typeKey]) {
+						type = value[typeKey];
+					} else {
+						throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property');
+					}
+				} else if (value._type_ && value._value_) {
+					type = value._type_;
+				}
+				else {
+					throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order');
+				}
+				if (typeof resolveType === 'function') {
+					inputType = resolveType(type);
+					if (!typeKey) {
+						inputType = helper(type, inputType);
+					}
+				} else {
+					inputType = referenceTypes[type];
+				}
+			}
+			if (isValidJSValue(value, inputType).length == 0) {
+				return value;
+			} else {
+				throw new GraphQLError();
+			}
 		},
-		parseLiteral: function(ast) {
+		parseLiteral: function (ast) {
 			var type, inputType;
 			if (typeof resolveTypeFromAst === 'function') {
 				inputType = resolveTypeFromAst(ast);
