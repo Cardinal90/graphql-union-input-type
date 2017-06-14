@@ -29,6 +29,7 @@ UnionInputType(options);
  - `resolveType`(`function(name)` -> `GraphQLInputObjectType|null`): takes a name found in mutation argument and returns corresponding
 `GraphQLInputObjectType` or an object returned by `UnionInputType`. This strategy is not restricted by a predefined set of input types. It behaves as an interface in that `UnionInputType` does not know what input types implement it. If omitted, `inputTypes` is used.
  - `resolveTypeFromAst`(`function(ast)` -> `GraphQLInputObjectType|null`): provide this, if you absolutely do not want to explicitly specify the type in you mutation. The function will be called with full AST, which you can traverse manually to identify the input type and return it.
+ - `resolveTypeFromValue`(`function(value)` -> `GraphQLInputObjectType|null`): same as `resolveTypeFromAst`, but for the case, where you use variables for your input types. The function is called with a variable value, and you need to return the input type
 
 ### Examples
 #### Create normal input types
@@ -162,14 +163,26 @@ var query = `mutation {
 	hero(input: {name: "Maul", saberColor: "red", doubleBlade: true})
 }`;
 ```
+#### Using variables (since 0.3.0)
+If you want to use variables, you may do it as you normally would. Please note, that the name of an input variable is a `name` property passed to the `UnionInputType` function. In terms of this readme it will be `hero`:
+```js
+var query = `mutation($hero: hero!) {
+	hero(input: $hero)
+}`;
+```
+There is a function `resolveTypeFromValue`, which is similar to `resolveTypeFromAst`, but used for a variable value.
 
 ## Capabilities
 You can use these unions as mutation arguments, nest them inside any input types and even create unions of unions. The only small problem is that objects returned by `UnionInputType` are really `GraphQLScalarType`, so I had to allow scalars to be passed to the function.
 
-Update: [this issue](https://github.com/Cardinal90/graphql-union-input-type/issues/2) highlighted a serious limitation - it is not possible to provide type as a variable.
+You may use variables since 0.3.0. [This issue](https://github.com/Cardinal90/graphql-union-input-type/issues/2) might have some relevant information.
 
 ## Tests
 Test are written for `jasmine`. I use `nodemon` to run them. You can find more examples in the spec file. The last test is not written formally, I just used it to play around with nested structures.
+
+Since 0.3.0 just use `npm run test`
+
+`graphql-js` 0.10.1 breaks tests. Seems to be a bug. [Reported here](https://github.com/graphql/graphql-js/issues/910)
 
 ## Contributing
 Feel free to make suggestions or pull requests.
