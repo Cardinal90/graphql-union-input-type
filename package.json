@@ -1,16 +1,16 @@
 {
     "name": "graphql-union-input-type",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "Union Input Type for graphql-js",
     "main": "index.js",
     "scripts": {
         "test": "jasmine",
-		"test:watch": "nodemon --exec jasmine"
+        "test:watch": "nodemon --exec jasmine"
     },
     "author": "Sergei Petrov",
     "license": "MIT",
     "peerDependencies": {
-        "graphql": "<=0.10.x"
+        "graphql": "<0.13"
     },
     "keywords": [
         "graphql",
