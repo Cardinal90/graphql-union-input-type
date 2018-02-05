@@ -2,11 +2,11 @@ var GraphQLScalarType = require('graphql').GraphQLScalarType;
 var GraphQLInputObjectType = require('graphql').GraphQLInputObjectType;
 var GraphQLString = require('graphql').GraphQLString;
 
-var isValidLiteralValue = require('graphql/utilities').isValidLiteralValue;
-var isValidJSValue = require('graphql/utilities').isValidJSValue;
-var valueFromAST = require('graphql/utilities').valueFromAST;
+var isValidLiteralValue = require('graphql').isValidLiteralValue;
+var isValidJSValue = require('graphql').isValidJSValue;
+var valueFromAST = require('graphql').valueFromAST;
 
-var GraphQLError = require('graphql/error').GraphQLError;
+var GraphQLError = require('graphql').GraphQLError;
 
 function helper(name, type) {
 	"use strict";
