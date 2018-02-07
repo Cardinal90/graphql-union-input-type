@@ -3,7 +3,7 @@ var GraphQLInputObjectType = require('graphql').GraphQLInputObjectType;
 var GraphQLString = require('graphql').GraphQLString;
 
 var isValidLiteralValue = require('graphql').isValidLiteralValue;
-var isValidJSValue = require('graphql').isValidJSValue;
+var coerceValue = require('graphql').coerceValue;
 var valueFromAST = require('graphql').valueFromAST;
 
 var GraphQLError = require('graphql').GraphQLError;
@@ -120,10 +120,15 @@ module.exports = function UnionInputType(options) {
 					inputType = referenceTypes[type];
 				}
 			}
-			if (isValidJSValue(value, inputType).length == 0) {
+			const errors = coerceValue(value, inputType).errors;
+
+			if (!errors) {
 				return value;
 			} else {
-				throw new GraphQLError();
+				const errorString = errors.map((error) => {
+					return "\n" + error.message;
+				}).join('');
+				throw new GraphQLError(errorString);
 			}
 		},
 		parseLiteral: function (ast) {
