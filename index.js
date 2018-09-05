@@ -125,7 +125,7 @@ module.exports = function UnionInputType(options) {
 			if (!errors) {
 				return value;
 			} else {
-				const errorString = errors.map((error) => {
+				const errorString = errors.map(function(error) {
 					return "\n" + error.message;
 				}).join('');
 				throw new GraphQLError(errorString);
