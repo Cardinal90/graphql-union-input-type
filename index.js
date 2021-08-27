@@ -2,8 +2,7 @@ var GraphQLScalarType = require('graphql').GraphQLScalarType;
 var GraphQLInputObjectType = require('graphql').GraphQLInputObjectType;
 var GraphQLString = require('graphql').GraphQLString;
 
-var isValidLiteralValue = require('graphql').isValidLiteralValue;
-var coerceValue = require('graphql').coerceValue;
+var coerceInputValue = require('graphql').coerceInputValue;
 var valueFromAST = require('graphql').valueFromAST;
 
 var GraphQLError = require('graphql').GraphQLError;
@@ -120,7 +119,7 @@ module.exports = function UnionInputType(options) {
 					inputType = referenceTypes[type];
 				}
 			}
-			const errors = coerceValue(value, inputType).errors;
+			const errors = coerceInputValue(value, inputType).errors;
 
 			if (!errors) {
 				return value;
@@ -170,8 +169,10 @@ module.exports = function UnionInputType(options) {
 					inputType = referenceTypes[type];
 				}
 			}
-			if (isValidLiteralValue(inputType, ast).length == 0) {
-				return valueFromAST(ast, inputType);
+
+			var value = valueFromAST(ast, inputType)
+			if (value != null) {
+				return value;
 			} else {
 				throw new GraphQLError('expected type ' + type + ', found ' + ast.loc.source.body.substring(ast.loc.start, ast.loc.end));
 			}

@@ -5,12 +5,12 @@
     "main": "index.js",
     "scripts": {
         "test": "jasmine",
-        "test:watch": "nodemon --exec jasmine"
+        "test:watch": "nodemon --inspect node_modules/.bin/jasmine"
     },
     "author": "Sergei Petrov",
     "license": "MIT",
     "peerDependencies": {
-        "graphql": "<0.13"
+        "graphql": ">=15.x.x <=15.x.x"
     },
     "keywords": [
         "graphql",
