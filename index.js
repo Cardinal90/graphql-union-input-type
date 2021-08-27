@@ -8,11 +8,15 @@ const {
 } = require('graphql')
 
 function createDefaultInputObjectType(name, type) {
-  return new GraphQLInputObjectType({ name, fields: () => ({
-      _type_: { type: GraphQLString },
-      _value_: { type }
+  if (type instanceof GraphQLInputObjectType || type instanceof GraphQLScalarType) {
+    return new GraphQLInputObjectType({ name, fields: () => ({
+        _type_: { type: GraphQLString },
+        _value_: { type }
+      })
     })
-  })
+  } else {
+    throw new GraphQLError(name + '(UnionInputType): all inputTypes must be of GraphQLInputObjectType or GraphQLScalarType(created by UnionInputType function)')
+  }
 }
 
 
@@ -32,21 +36,16 @@ module.exports = function UnionInputType(options) {
   let { inputTypes } = options
 
   if (!resolveType && !resolveTypeFromAst) {
+    // if inputType is array, convert to object associating with the "name" key
     if (Array.isArray(inputTypes)) {
-      inputTypes = inputTypes.reduce(function (acc, refType) {
-        if (!(refType instanceof GraphQLInputObjectType || refType instanceof GraphQLScalarType)) {
-          throw (new GraphQLError(name + '(UnionInputType): all inputTypes must be of GraphQLInputObjectType or GraphQLScalarType(created by UnionInputType function)'));
-        }
-        acc[refType.name] = (typeKey ? refType : createDefaultInputObjectType(refType.name, refType));
-        return acc;
-      }, {});
-    } else if (inputTypes !== null && typeof inputTypes === 'object') {
-      Object.keys(inputTypes).forEach(function (key) {
-        if (!(inputTypes[key] instanceof GraphQLInputObjectType || inputTypes[key] instanceof GraphQLScalarType)) {
-          throw (new GraphQLError(name + '(UnionInputType): all inputTypes must be of GraphQLInputObjectType or GraphQLScalarType(created by UnionInputType function'));
-        }
-        inputTypes[key] = typeKey ? inputTypes[key] : createDefaultInputObjectType(key, inputTypes[key]);
-      });
+      inputTypes = inputTypes.reduce((acc, refType) => ({ ...acc, [refType.name]: refType }), {});
+    }
+
+    if (inputTypes && typeof inputTypes === 'object') {
+      inputTypes = Object.fromEntries(
+        Object.entries(inputTypes)
+          .map(([key, type]) => [key, typeKey ? type : createDefaultInputObjectType(key, type)])
+      )
     }
   }
 
