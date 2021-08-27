@@ -80,16 +80,9 @@ module.exports = function UnionInputType(options) {
           : resolveType(type)
         : inputTypes[type]
 
-      const errors = coerceInputValue(value, inputType).errors;
-
-      if (!errors) {
-        return value;
-      } else {
-        const errorString = errors.map((error) => {
-          return "\n" + error.message;
-        }).join('');
-        throw new GraphQLError(errorString);
-      }
+      const { errors } = coerceInputValue(value, inputType);
+      if (errors) throw new GraphQLError(errors.map(e => "\n" + e.message).join(''))
+      return value
     },
 
     parseLiteral(ast) {
@@ -98,30 +91,14 @@ module.exports = function UnionInputType(options) {
         inputType = resolveTypeFromAst(ast);
       } else {
         if (typeKey) {
-          try {
-            for (let i = 0; i < ast.fields.length; i++) {
-              if (ast.fields[i].name.value === typeKey) {
-                type = ast.fields[i].value.value;
-                break;
-              }
-            }
-            if (!type) {
-              throw (new Error);
-            }
-          } catch (err) {
-            throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property');
-          }
+          type = ast.fields.find(field => field.name.value === typeKey)
+          if (!type) throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property')
+        } else if (ast.fields[0].name.value === '_type_' && ast.fields[1].name.value === '_value_'){
+          type = ast.fields[0].value.value
         } else {
-          try {
-            if (ast.fields[0].name.value === '_type_' && ast.fields[1].name.value === '_value_') {
-              type = ast.fields[0].value.value;
-            } else {
-              throw (new Error);
-            }
-          } catch (err) {
-            throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order');
-          }
+          throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order');
         }
+
         if (typeof resolveType === 'function') {
           inputType = resolveType(type);
           if (!typeKey) {
@@ -133,11 +110,8 @@ module.exports = function UnionInputType(options) {
       }
 
       const value = valueFromAST(ast, inputType)
-      if (value != null) {
-        return value;
-      } else {
-        throw new GraphQLError('expected type ' + type + ', found ' + ast.loc.source.body.substring(ast.loc.start, ast.loc.end));
-      }
+      if (value == null) throw new GraphQLError('expected type ' + type + ', found ' + ast.loc.source.body.substring(ast.loc.start, ast.loc.end))
+      return value
     }
   });
 };
