@@ -1,31 +1,40 @@
 {
-    "name": "graphql-union-input-type",
-    "version": "0.4.0",
-    "description": "Union Input Type for graphql-js",
-    "main": "index.js",
-    "scripts": {
-        "test": "jasmine",
-        "test:watch": "nodemon --inspect node_modules/.bin/jasmine"
-    },
-    "author": "Sergei Petrov",
-    "license": "MIT",
-    "peerDependencies": {
-        "graphql": ">=15.x.x <=15.x.x"
-    },
-    "keywords": [
-        "graphql",
-        "union",
-        "interface",
-        "input",
-        "type"
-    ],
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/Cardinal90/graphql-union-input-type.git"
-    },
-    "homepage": "https://github.com/Cardinal90/graphql-union-input-type",
-    "devDependencies": {
-        "jasmine": "^2.6.0",
-        "nodemon": "^1.11.0"
-    }
+  "name": "graphql-union-input-type",
+  "version": "0.4.0",
+  "description": "Union Input Type for graphql-js",
+  "types": "./index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc -p tsconfig.json && cp package.json dist/package.json"
+  },
+  "author": "Sergei Petrov",
+  "license": "MIT",
+  "contributors": [
+    "NathanPB <nathan.pbombana@gmail.com> (https://github.com/NathanPB)"
+  ],
+  "peerDependencies": {
+    "graphql": ">=15.x.x <=15.x.x"
+  },
+  "keywords": [
+    "graphql",
+    "union",
+    "interface",
+    "input",
+    "type"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cardinal90/graphql-union-input-type.git"
+  },
+  "homepage": "https://github.com/Cardinal90/graphql-union-input-type",
+  "devDependencies": {
+    "@types/jest": "^27.0.1",
+    "jest": "^27.0.6",
+    "nodemon": "^1.11.0",
+    "ts-jest": "^27.0.5",
+    "ts-node": "^10.2.1",
+    "tslib": "^2.3.1",
+    "typescript": "^4.4.2"
+  }
 }
