@@ -19,6 +19,15 @@ function createDefaultInputObjectType(name, type) {
   }
 }
 
+function resolveTypeFromValueImp(value, { name, typeKey }) {
+  if (typeKey === '_type_') {
+    if (!value._value_ || !value._type_) throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this exact order')
+    return value._type_
+  }
+
+  if (!value[typeKey]) throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property');
+  return value[typeKey]
+}
 
 /**
  * UnionInputType - Union Input Type for GraphQL
@@ -32,7 +41,7 @@ function createDefaultInputObjectType(name, type) {
  * @return {any} 	returns validated and parsed value
  */
 module.exports = function UnionInputType(options) {
-  const { name, typeKey, resolveType, resolveTypeFromAst, resolveTypeFromValue } = options
+  const { name, typeKey, resolveType, resolveTypeFromAst } = options
   let { inputTypes } = options
 
   if (!resolveType && !resolveTypeFromAst) {
@@ -49,31 +58,15 @@ module.exports = function UnionInputType(options) {
     }
   }
 
+  const resolveTypeFromValue = options.resolveTypeFromValue || resolveTypeFromValueImp
+
   return new GraphQLScalarType({
     name,
 
     serialize: (value) => value,
 
     parseValue(value) {
-      function resolveTypeFromKey() {
-        if (typeof resolveTypeFromValue === 'function') {
-          return resolveTypeFromValue(value)
-        }
-
-        if (typeKey) {
-          if (value[typeKey]) {
-            return value[typeKey]
-          } else {
-            throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property');
-          }
-        } else if (value._type_ && value._value_) {
-          return value._type_
-        } else {
-          throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order')
-        }
-      }
-
-      const actualType = resolveTypeFromKey()
+      const actualType = resolveTypeFromValue(value, options)
       const expectedType = typeof resolveType === 'function'
         ? typeKey
           ? createDefaultInputObjectType(actualType, resolveType(actualType))
