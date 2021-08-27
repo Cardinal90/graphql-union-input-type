@@ -73,44 +73,44 @@ module.exports = function UnionInputType(options) {
         }
       }
 
-      const type = resolveTypeFromKey()
-      const inputType = typeof resolveType === 'function'
+      const actualType = resolveTypeFromKey()
+      const expectedType = typeof resolveType === 'function'
         ? typeKey
-          ? createDefaultInputObjectType(type, resolveType(type))
-          : resolveType(type)
-        : inputTypes[type]
+          ? createDefaultInputObjectType(actualType, resolveType(actualType))
+          : resolveType(actualType)
+        : inputTypes[actualType]
 
-      const { errors } = coerceInputValue(value, inputType);
+      const { errors } = coerceInputValue(value, expectedType);
       if (errors) throw new GraphQLError(errors.map(e => "\n" + e.message).join(''))
       return value
     },
 
     parseLiteral(ast) {
-      let type, inputType;
+      let expectedType, actualType;
       if (typeof resolveTypeFromAst === 'function') {
-        inputType = resolveTypeFromAst(ast);
+        actualType = resolveTypeFromAst(ast);
       } else {
         if (typeKey) {
-          type = ast.fields.find(field => field.name.value === typeKey)
-          if (!type) throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property')
+          expectedType = ast.fields.find(field => field.name.value === typeKey)
+          if (!expectedType) throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property')
         } else if (ast.fields[0].name.value === '_type_' && ast.fields[1].name.value === '_value_'){
-          type = ast.fields[0].value.value
+          expectedType = ast.fields[0].value.value
         } else {
           throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order');
         }
 
         if (typeof resolveType === 'function') {
-          inputType = resolveType(type);
+          actualType = resolveType(expectedType);
           if (!typeKey) {
-            inputType = createDefaultInputObjectType(type, inputType);
+            actualType = createDefaultInputObjectType(expectedType, actualType);
           }
         } else {
-          inputType = inputTypes[type];
+          actualType = inputTypes[expectedType];
         }
       }
 
-      const value = valueFromAST(ast, inputType)
-      if (value == null) throw new GraphQLError('expected type ' + type + ', found ' + ast.loc.source.body.substring(ast.loc.start, ast.loc.end))
+      const value = valueFromAST(ast, actualType)
+      if (value == null) throw new GraphQLError('expected type ' + expectedType + ', found ' + ast.loc.source.body.substring(ast.loc.start, ast.loc.end))
       return value
     }
   });
