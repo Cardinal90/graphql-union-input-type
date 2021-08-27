@@ -1,124 +1,86 @@
-var GraphQLScalarType = require('graphql').GraphQLScalarType;
-var GraphQLInputObjectType = require('graphql').GraphQLInputObjectType;
-var GraphQLString = require('graphql').GraphQLString;
+const {
+  GraphQLScalarType,
+  GraphQLInputObjectType,
+  GraphQLString,
+  coerceInputValue,
+  valueFromAST,
+  GraphQLError
+} = require('graphql')
 
-var coerceInputValue = require('graphql').coerceInputValue;
-var valueFromAST = require('graphql').valueFromAST;
-
-var GraphQLError = require('graphql').GraphQLError;
-
-function helper(name, type) {
-  "use strict";
-  return (new GraphQLInputObjectType({
-    name: name,
-    fields: function () {
-      return {
-        _type_: {
-          type: GraphQLString
-        },
-        _value_: {
-          type: type
-        }
-      };
-    }
-  }));
+function createDefaultInputObjectType(name, type) {
+  return new GraphQLInputObjectType({ name, fields: () => ({
+      _type_: { type: GraphQLString },
+      _value_: { type }
+    })
+  })
 }
 
 
 /**
  * UnionInputType - Union Input Type for GraphQL
  *
- * @param  {object} options see below
+ * @param {string} options.name Name for the union type. Must be unique in your schema. Has to be used in queries to nested unions.
+ * @param {array|object|undefined} options.inputTypes Either array of GraphQLInputObjectType objects or UnionInputTypes (which are Scalars really) or object with {name:GraphQLInputObjectType} pairs. Will be ignored if resolveType is provided.
+ * @param {string|undefined} options.typeKey If provided, is used as a key containing the type name. If not, the query argument must contain _type_ and _value_ parameters in this particular order.
+ * @param {function|undefined} options.resolveType If provided, is called with a key name and must return corresponding GraphQLInputObjectType or null.
+ * @param {function|undefined} options.resolveTypeFromAst If provided, is called with full AST for the input argument and must return corresponding GraphQLInputObjectType or null.
+ * @param {function|undefined} options.resolveTypeFromValue If provided, is called with a variable value and must return corresponding GraphQLInputObjectType or null.
  * @return {any} 	returns validated and parsed value
  */
 module.exports = function UnionInputType(options) {
-  "use strict";
-
-  /**
-   * 	@param  {array} options.name					Name for the union type. Must be unique in your schema. Has to be used in queries to nested unions.
-   */
-  var name = options.name;
-
-  /**
-   * 	@param  {array|object} options.inputTypes 		Optional. Either array of GraphQLInputObjectType objects or UnionInputTypes (which are Scalars really)
-   * 	                                              	or object with {name:GraphQLInputObjectType} pairs.
-   * 	                                             	Will be ignored if resolveType is provided.
-   */
-  var referenceTypes = options.inputTypes;
-
-  /**
-   * 	 @param  {string} options.typeKey				Optional. If provided, is used as a key containing the type name. If not, the query argument must
-   * 	                                      			contain _type_ and _value_ parameteres in this particular order
-   */
-  var typeKey = options.typeKey;
-
-  /**
-   * 	 @param  {function} options.resolveType			Optional. If provided, is called with a key name and must return corresponding GraphQLInputObjectType or null
-   */
-  var resolveType = options.resolveType;
-
-  /**
-   * 	 @param  {function} options.resolveTypeFromAst			Optional. If provided, is called with full AST for the input argument and must return
-   * 	                                          		corresponding GraphQLInputObjectType or null
-   */
-  var resolveTypeFromAst = options.resolveTypeFromAst;
-
-  /**
-   * 	 @param  {function} options.resolveTypeFromValue		Optional. If provided, is called with a variable value and must return
-   * 	                                          		corresponding GraphQLInputObjectType or null
-   */
-  var resolveTypeFromValue = options.resolveTypeFromValue;
+  const { name, typeKey, resolveType, resolveTypeFromAst, resolveTypeFromValue } = options
+  let { inputTypes } = options
 
   if (!resolveType && !resolveTypeFromAst) {
-    if (Array.isArray(referenceTypes)) {
-      referenceTypes = referenceTypes.reduce(function (acc, refType) {
+    if (Array.isArray(inputTypes)) {
+      inputTypes = inputTypes.reduce(function (acc, refType) {
         if (!(refType instanceof GraphQLInputObjectType || refType instanceof GraphQLScalarType)) {
           throw (new GraphQLError(name + '(UnionInputType): all inputTypes must be of GraphQLInputObjectType or GraphQLScalarType(created by UnionInputType function)'));
         }
-        acc[refType.name] = (typeKey ? refType : helper(refType.name, refType));
+        acc[refType.name] = (typeKey ? refType : createDefaultInputObjectType(refType.name, refType));
         return acc;
       }, {});
-    } else if (referenceTypes !== null && typeof referenceTypes === 'object') {
-      Object.keys(referenceTypes).forEach(function (key) {
-        if (!(referenceTypes[key] instanceof GraphQLInputObjectType || referenceTypes[key] instanceof GraphQLScalarType)) {
+    } else if (inputTypes !== null && typeof inputTypes === 'object') {
+      Object.keys(inputTypes).forEach(function (key) {
+        if (!(inputTypes[key] instanceof GraphQLInputObjectType || inputTypes[key] instanceof GraphQLScalarType)) {
           throw (new GraphQLError(name + '(UnionInputType): all inputTypes must be of GraphQLInputObjectType or GraphQLScalarType(created by UnionInputType function'));
         }
-        referenceTypes[key] = typeKey ? referenceTypes[key] : helper(key, referenceTypes[key]);
+        inputTypes[key] = typeKey ? inputTypes[key] : createDefaultInputObjectType(key, inputTypes[key]);
       });
     }
   }
 
-  var union = (new GraphQLScalarType({
-    name: name,
-    serialize: function (value) {
-      return value;
-    },
-    parseValue: function (value) {
-      var type, inputType, ast;
-      if (typeof resolveTypeFromValue === 'function') {
-        inputType = resolveTypeFromValue(value);
-      } else {
+  return new GraphQLScalarType({
+    name,
+
+    serialize: (value) => value,
+
+    parseValue(value) {
+      function resolveTypeFromKey() {
+        if (typeof resolveTypeFromValue === 'function') {
+          return resolveTypeFromValue(value)
+        }
+
         if (typeKey) {
           if (value[typeKey]) {
-            type = value[typeKey];
+            return value[typeKey]
           } else {
             throw new GraphQLError(name + '(UnionInputType): Expected an object with "' + typeKey + '" property');
           }
         } else if (value._type_ && value._value_) {
-          type = value._type_;
-        }
-        else {
-          throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order');
-        }
-        if (typeof resolveType === 'function') {
-          inputType = resolveType(type);
-          if (!typeKey) {
-            inputType = helper(type, inputType);
-          }
+          return value._type_
         } else {
-          inputType = referenceTypes[type];
+          throw new GraphQLError(name + '(UnionInputType): Expected an object with _type_ and _value_ properties in this order')
         }
       }
+
+      const type = resolveTypeFromKey()
+      const inputType = typeof resolveType === 'function'
+        ? typeKey
+          ? createDefaultInputObjectType(type, resolveType(type))
+          : resolveType(type)
+        : inputTypes[type]
+
       const errors = coerceInputValue(value, inputType).errors;
 
       if (!errors) {
@@ -130,14 +92,15 @@ module.exports = function UnionInputType(options) {
         throw new GraphQLError(errorString);
       }
     },
-    parseLiteral: function (ast) {
-      var type, inputType;
+
+    parseLiteral(ast) {
+      let type, inputType;
       if (typeof resolveTypeFromAst === 'function') {
         inputType = resolveTypeFromAst(ast);
       } else {
         if (typeKey) {
           try {
-            for (var i = 0; i < ast.fields.length; i++) {
+            for (let i = 0; i < ast.fields.length; i++) {
               if (ast.fields[i].name.value === typeKey) {
                 type = ast.fields[i].value.value;
                 break;
@@ -163,21 +126,19 @@ module.exports = function UnionInputType(options) {
         if (typeof resolveType === 'function') {
           inputType = resolveType(type);
           if (!typeKey) {
-            inputType = helper(type, inputType);
+            inputType = createDefaultInputObjectType(type, inputType);
           }
         } else {
-          inputType = referenceTypes[type];
+          inputType = inputTypes[type];
         }
       }
 
-      var value = valueFromAST(ast, inputType)
+      const value = valueFromAST(ast, inputType)
       if (value != null) {
         return value;
       } else {
         throw new GraphQLError('expected type ' + type + ', found ' + ast.loc.source.body.substring(ast.loc.start, ast.loc.end));
       }
     }
-  }));
-
-  return union;
+  });
 };
