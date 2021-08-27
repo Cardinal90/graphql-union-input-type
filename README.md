@@ -10,26 +10,25 @@ It would be nice to have some syntax support to specify the type to be validated
 ```
 npm install graphql-union-input-type
 ```
+
 ## Usage
 ```
-var UnionInputType = require('graphql-union-input-type');
+const UnionInputType = require('graphql-union-input-type');
 
 UnionInputType(options);
 ```
 ### Parameters
+
 #### Options(object)
  - `name`(`string`)
- Name for the UnionType itself. It has to be unique in your schema and it can be used to mutate a union nested inside of another union.
+   - Name for the UnionType itself. It has to be unique in your schema and it can be used to mutate a union nested inside of another union.
+
  - `inputTypes`(`array|object`):
    - either array of `GraphQLInputObjectType` objects. Their `name` property will be referenced in mutations.
    - or object with `name:GraphQLInputObjectType` pairs. This `name` will be used instead.
 
-   Objects returned by `UnionInputType` may also be used. This argument will be ignored if `resolveType` function is provided.
- - `typeKey`(`string)`: a key in a mutation argument object containing the `name` of a type to validate against. If omitted, another [strategy](#now-you-can-call-mutations-on-it) will be used instead.
- - `resolveType`(`function(name)` -> `GraphQLInputObjectType|null`): takes a name found in mutation argument and returns corresponding
-`GraphQLInputObjectType` or an object returned by `UnionInputType`. This strategy is not restricted by a predefined set of input types. It behaves as an interface in that `UnionInputType` does not know what input types implement it. If omitted, `inputTypes` is used.
- - `resolveTypeFromAst`(`function(ast)` -> `GraphQLInputObjectType|null`): provide this, if you absolutely do not want to explicitly specify the type in you mutation. The function will be called with full AST, which you can traverse manually to identify the input type and return it.
- - `resolveTypeFromValue`(`function(value)` -> `GraphQLInputObjectType|null`): same as `resolveTypeFromAst`, but for the case, where you use variables for your input types. The function is called with a variable value, and you need to return the input type
+ - `typeKey`(`string`)
+   - A key in a mutation argument object containing the `name` of a type to validate against.
 
 ### Examples
 #### Create normal input types
@@ -70,7 +69,7 @@ var SithInputType = new GraphQLInputObjectType({
 var HeroInputType = UnionInputType({
 	name: 'hero',
 	inputTypes: [JediInputType, SithInputType], //an object can be used instead to query by names other than defined in these types
-	typeKey: 'side' //optional
+	typeKey: 'side'
 });
 ```
 OR
@@ -157,7 +156,6 @@ var query = `mutation {
 ```
 Your `resolve` function for mutation arguments will get this `input` argument as is.
 
-Finally if you provided `resolveTypeFromAst` function, you may query with an input argument as it is:
 ```js
 var query = `mutation {
 	hero(input: {name: "Maul", saberColor: "red", doubleBlade: true})
@@ -170,7 +168,6 @@ var query = `mutation($hero: hero!) {
 	hero(input: $hero)
 }`;
 ```
-There is a function `resolveTypeFromValue`, which is similar to `resolveTypeFromAst`, but used for a variable value.
 
 ## Capabilities
 You can use these unions as mutation arguments, nest them inside any input types and even create unions of unions. The only small problem is that objects returned by `UnionInputType` are really `GraphQLScalarType`, so I had to allow scalars to be passed to the function.
@@ -178,11 +175,9 @@ You can use these unions as mutation arguments, nest them inside any input types
 You may use variables since 0.3.0. [This issue](https://github.com/Cardinal90/graphql-union-input-type/issues/2) might have some relevant information.
 
 ## Tests
-Test are written for `jasmine`. I use `nodemon` to run them. You can find more examples in the spec file. The last test is not written formally, I just used it to play around with nested structures.
+Test are written for `jest`. I use `nodemon` to run them. You can find more examples in the spec file. The last test is not written formally, I just used it to play around with nested structures.
 
 Since 0.3.0 just use `npm run test`
-
-`graphql-js` 0.10.1 breaks tests. Seems to be a bug. [Reported here](https://github.com/graphql/graphql-js/issues/910)
 
 ## Contributing
 Feel free to make suggestions or pull requests.
