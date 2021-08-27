@@ -7,7 +7,7 @@ import {
   GraphQLSchema,
   GraphQLString
 } from "graphql";
-import UnionInputType, {UnionInputTypeArgs} from "../index";
+import UnionInputType, {UnionInputTypeArgs} from "../src";
 
 const JediInputType = new GraphQLInputObjectType({
   name: 'Jedi',
